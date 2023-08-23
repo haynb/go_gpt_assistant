@@ -3,27 +3,40 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/tmc/langchaingo/chains"
 	"github.com/tmc/langchaingo/documentloaders"
 	em "github.com/tmc/langchaingo/embeddings/openai"
+	"github.com/tmc/langchaingo/llms/openai"
 	"github.com/tmc/langchaingo/schema"
 	"github.com/tmc/langchaingo/textsplitter"
 	"os"
+	"qdrant/db"
 	"strings"
 )
 
-func docToPo(docs []schema.Document) ([]string, error) {
-	texts := make([]string, len(docs))
-	// Iterate over the docs slice
+func DocToPoints(docs []schema.Document, e em.OpenAI) ([]map[string]interface{}, error) {
+	points := make([]map[string]interface{}, len(docs))
 	for i, doc := range docs {
-		// Combine the PageContent and Metadata into a single string
 		metadataStrs := make([]string, 0, len(doc.Metadata))
 		for k, v := range doc.Metadata {
 			metadataStrs = append(metadataStrs, fmt.Sprintf("%s: %v", k, v))
 		}
-		texts[i] = fmt.Sprintf("%s\nMetadata:\n%s", doc.PageContent, strings.Join(metadataStrs, "\n"))
+		fullText := fmt.Sprintf("%s\nMetadata:\n%s", doc.PageContent, strings.Join(metadataStrs, "\n"))
+		// 获取向量
+		embeddingResponse, err := e.EmbedQuery(context.Background(), fullText)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to get embedding for document %d: %v", i, err)
+		}
+		// 芜湖起飞
+		points[i] = map[string]interface{}{
+			"id": i + 1,
+			"payload": map[string]interface{}{
+				"text": fullText,
+			},
+			"vectors": embeddingResponse,
+		}
 	}
-
-	return texts, nil
+	return points, nil
 }
 func main() {
 	// 定义要设置的环境变量和对应的值
@@ -40,11 +53,11 @@ func main() {
 			panic(err)
 		}
 	}
-	//llm, err := openai.NewChat()
-	//if err != nil {
-	//	panic(err)
-	//}
-	//stuffQAChain := chains.LoadStuffQA(llm)
+	llm, err := openai.NewChat()
+	if err != nil {
+		panic(err)
+	}
+	stuffQAChain := chains.LoadStuffQA(llm)
 	file, err := os.Open("xiaozhao.pdf")
 	if err != nil {
 		panic(err)
@@ -52,7 +65,7 @@ func main() {
 	// 获取文件大小
 	fileInfo, err := file.Stat()
 	if err != nil {
-		fmt.Println("Error:", err)
+		panic(err)
 		return
 	}
 	fileSize := fileInfo.Size()
@@ -62,26 +75,48 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
 	e, err := em.NewOpenAI()
 	if err != nil {
 		panic(err)
 	}
-	docs, err := docToEm(doc)
+	points, err := DocToPoints(doc, e)
 	if err != nil {
 		panic(err)
 	}
-	put_doc, err := e.EmbedDocuments(context.Background(), docs)
+	err = db.DeleteCollection("test")
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(len(put_doc), put_doc[0])
-	//answer, err := chains.Call(context.Background(), stuffQAChain, map[string]any{
-	//	"input_documents": put_doc,
-	//	"question":        "什么是校招生?",
-	//})
-	//if err != nil {
-	//	panic(err)
-	//}
-	//fmt.Print(answer)
+	result0, err := db.CreateCollection("test")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("create:", string(result0))
+	result1, err := db.AddPoints("test", points)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("add:", result1)
+	query := "什么是校招生？"
+	q_e, err := e.EmbedQuery(context.Background(), query)
+	if err != nil {
+		panic(err)
+	}
+	put_doc, err := db.Search(
+		"test",
+		map[string]interface{}{"exact": false, "hnsw_ef": 128},
+		q_e,
+		4)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("search:", put_doc)
+	answer, err := chains.Call(context.Background(), stuffQAChain, map[string]any{
+		"input_documents": put_doc,
+		"question":        query,
+	})
+	if err != nil {
+		panic(err)
+	}
+	fmt.Print(answer)
 }

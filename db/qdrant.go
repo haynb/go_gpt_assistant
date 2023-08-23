@@ -1,4 +1,4 @@
-package main
+package db
 
 import (
 	"bytes"
@@ -14,14 +14,14 @@ var (
 )
 
 // 创建一个集合
-func CreateCollection(collectionName string) error {
-	url := fmt.Sprintf("http://%s:%s/collections", QdrantBase, QdrantPort)
+func CreateCollection(collectionName string) ([]byte, error) {
+	url := fmt.Sprintf("http://%s:%s/collections/%s", QdrantBase, QdrantPort, collectionName)
 	requestBody, err := json.Marshal(map[string]interface{}{
-		"name": collectionName,
 		"vectors": map[string]interface{}{
-			"sizes": 1536,
-			"dists": "cosine",
+			"size":     1536,
+			"distance": "Cosine",
 		},
+		"on_disk_payload": true,
 	})
 	if err != nil {
 		panic(err)
@@ -37,7 +37,8 @@ func CreateCollection(collectionName string) error {
 		panic(err)
 	}
 	defer response.Body.Close()
-	return nil
+	result, err := io.ReadAll(response.Body)
+	return result, nil
 }
 
 // 删除一个集合
@@ -75,7 +76,7 @@ func GetCollection(collectionName string) ([]byte, error) {
 
 // 增加向量
 func AddPoints(collectionName string, points []map[string]interface{}) (string, error) {
-	url := fmt.Sprintf("http://%s:%s/collections/%s", QdrantBase, QdrantPort, collectionName)
+	url := fmt.Sprintf("http://%s:%s/collections/%s/points?wait=true", QdrantBase, QdrantPort, collectionName)
 	requestBody, err := json.Marshal(map[string]interface{}{
 		"points": points,
 	})
@@ -101,10 +102,10 @@ func AddPoints(collectionName string, points []map[string]interface{}) (string, 
 }
 
 // 搜索向量
-func Search(collectionName string, query map[string]interface{}, vector []float64, limit int) ([]byte, error) {
-	url := fmt.Sprintf("http://%s:%s/collections/%s/search", QdrantBase, QdrantPort, collectionName)
+func Search(collectionName string, params map[string]interface{}, vector []float64, limit int) (string, error) {
+	url := fmt.Sprintf("http://%s:%s/collections/%s/points/search", QdrantBase, QdrantPort, collectionName)
 	requestBody, err := json.Marshal(map[string]interface{}{
-		"params":       query,
+		"params":       params,
 		"vector":       vector,
 		"limit":        limit,
 		"with_payload": true,
@@ -127,5 +128,5 @@ func Search(collectionName string, query map[string]interface{}, vector []float6
 	if err != nil {
 		panic(err)
 	}
-	return result, nil
+	return string(result), nil
 }
