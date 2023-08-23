@@ -2,16 +2,45 @@ package db
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
+	em "github.com/tmc/langchaingo/embeddings/openai"
+	"github.com/tmc/langchaingo/schema"
 	"io"
 	"net/http"
+	"strings"
 )
 
 var (
 	QdrantBase = "154.12.244.129"
 	QdrantPort = "6333"
 )
+
+func DocToPoints(docs []schema.Document, e em.OpenAI) ([]map[string]interface{}, error) {
+	points := make([]map[string]interface{}, len(docs))
+	for i, doc := range docs {
+		metadataStrs := make([]string, 0, len(doc.Metadata))
+		for k, v := range doc.Metadata {
+			metadataStrs = append(metadataStrs, fmt.Sprintf("%s: %v", k, v))
+		}
+		fullText := fmt.Sprintf("%s\nMetadata:\n%s", doc.PageContent, strings.Join(metadataStrs, "\n"))
+		// 获取向量
+		embeddingResponse, err := e.EmbedQuery(context.Background(), fullText)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to get embedding for document %d: %v", i, err)
+		}
+		// 芜湖起飞
+		points[i] = map[string]interface{}{
+			"id": i + 1,
+			"payload": map[string]interface{}{
+				"text": fullText,
+			},
+			"vectors": embeddingResponse,
+		}
+	}
+	return points, nil
+}
 
 // 创建一个集合
 func CreateCollection(collectionName string) ([]byte, error) {
