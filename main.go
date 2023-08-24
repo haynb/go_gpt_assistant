@@ -50,7 +50,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	query := "赛维周边环境怎么样？"
+	query := "扭矩传感器的性能指标有哪些？"
 	q_e, err := e.EmbedQuery(context.Background(), query)
 	if err != nil {
 		panic(err)
