@@ -49,7 +49,7 @@ db文件夹下qdrant.go即为数据库配置，请把
 ```go
 var (
 	QdrantBase = "1**.**.2*.***"//数据库ip地址
-	QdrantPort = "6333"
+	QdrantPort = "6333"//数据库的开放端口
 	id_file    = "id.txt"
 )
 ```
