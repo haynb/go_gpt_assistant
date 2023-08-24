@@ -9,17 +9,31 @@ import (
 	"github.com/tmc/langchaingo/schema"
 	"io"
 	"net/http"
+	"os"
+	"strconv"
 	"strings"
 )
 
 var (
 	QdrantBase = "154.12.244.129"
 	QdrantPort = "6333"
+	id_file    = "id.txt"
 )
 
 func DocToPoints(docs []schema.Document, e em.OpenAI) ([]map[string]interface{}, error) {
 	points := make([]map[string]interface{}, len(docs))
-	for i, doc := range docs {
+	// 获取id
+	file, err := os.OpenFile(id_file, os.O_RDWR|os.O_CREATE, 0755)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+	content, err := io.ReadAll(file)
+	if err != nil {
+		panic(err)
+	}
+	i, _ := strconv.Atoi(strings.TrimSpace(string(content)))
+	for j, doc := range docs {
 		metadataStrs := make([]string, 0, len(doc.Metadata))
 		for k, v := range doc.Metadata {
 			metadataStrs = append(metadataStrs, fmt.Sprintf("%s: %v", k, v))
@@ -31,14 +45,22 @@ func DocToPoints(docs []schema.Document, e em.OpenAI) ([]map[string]interface{},
 			return nil, fmt.Errorf("Failed to get embedding for document %d: %v", i, err)
 		}
 		// 芜湖起飞
-		points[i] = map[string]interface{}{
+		points[j] = map[string]interface{}{
 			"id": i + 1,
 			"payload": map[string]interface{}{
 				"text": fullText,
 			},
 			"vectors": embeddingResponse,
 		}
+		fmt.Println("已经处理完第", i, "个文档")
+		i++
 	}
+	// 保存id
+	_, err = file.WriteAt([]byte(strconv.Itoa(i)), 0)
+	if err != nil {
+		panic(err)
+	}
+	file.Sync()
 	return points, nil
 }
 
