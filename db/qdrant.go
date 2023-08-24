@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	QdrantBase = "154.12.244.129"
+	QdrantBase = "1**.**.2*.***"//数据库ip地址
 	QdrantPort = "6333"
 	id_file    = "id.txt"
 )
