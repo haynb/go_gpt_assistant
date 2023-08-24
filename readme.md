@@ -1,4 +1,4 @@
-# 基于go语言的只能客服系统
+# 基于go语言的智能客服系统
 
 之前写了一个带后端的python版本，带简易后端，但是不稳定，性能不好，并且很垃圾。传送门：https://github.com/haynb/chatgpt_Read_Local
 
