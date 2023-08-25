@@ -19,7 +19,7 @@ type Gpt3Dot5Message openai.ChatCompletionMessage
 func init() {
 	//定义要设置的环境变量和对应的值
 	envVars := map[string]string{
-		"OPENAI_API_KEY":  "sk-Uhzx***************************XGPa9r",
+		"OPENAI_API_KEY":  "sk-Uhzx***************************XG**9r",
 		"OPENAI_BASE_URL": "https://c**************/v1",
 		"OPENAI_MODEL":    "gpt-3.5-turbo",
 	}
