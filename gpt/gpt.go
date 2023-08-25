@@ -18,8 +18,8 @@ type Gpt3Dot5Message openai.ChatCompletionMessage
 func init() {
 	//定义要设置的环境变量和对应的值
 	envVars := map[string]string{
-		"OPENAI_API_KEY":  "sk-UhzxW8avagN8D00Q2AmHeJL1LBz6NFv9rI3USa94GiXGPa9r",
-		"OPENAI_BASE_URL": "https://cfwus02.opapi.win/v1",
+		"OPENAI_API_KEY":  "sk-***********************************************r",
+		"OPENAI_BASE_URL": "https://cfwu***********************n/v1",
 		"OPENAI_MODEL":    "gpt-3.5-turbo",
 	}
 	// 逐个设置环境变量
@@ -41,8 +41,8 @@ func NewEm() (em.OpenAI, error) {
 func NewChatGptTool() *ChatGptTool {
 	//key := os.Getenv("OPENAI_API_KEY")
 	//url := os.Getenv("OPENAI_BASE_URL")
-	key := "sk-ql6RVY09mGrVRsbS7b1hEwsmTRXSxjttK17P5wPl3LWlR2Ek"
-	url := "https://gptgod.online/api/v1"
+	key := "sk-ql6*******************************P5***LWlR2Ek"
+	url := "https://*********************/v1"
 	config := openai.DefaultConfig(key)
 	config.BaseURL = url
 	client := openai.NewClientWithConfig(config)
