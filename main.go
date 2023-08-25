@@ -191,13 +191,20 @@ func chatWithFile(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		writeJSONError(w, http.StatusInternalServerError, "ServerError")
 		return
 	}
+	tools := gpt.NewChatGptTool()
+	keyWords, err := tools.GetKeyWord(query)
+	if err != nil {
+		fmt.Println(err)
+		writeJSONError(w, http.StatusInternalServerError, "ServerError")
+		return
+	}
 	e, err := gpt.NewEm()
 	if err != nil {
 		fmt.Println(err)
 		writeJSONError(w, http.StatusInternalServerError, "ServerError")
 		return
 	}
-	q_e, err := e.EmbedQuery(context.Background(), query)
+	q_e, err := e.EmbedQuery(context.Background(), keyWords)
 	if err != nil {
 		fmt.Println(err)
 		writeJSONError(w, http.StatusInternalServerError, "ServerError")
@@ -207,23 +214,27 @@ func chatWithFile(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		"test",
 		map[string]interface{}{"exact": false, "hnsw_ef": 256},
 		q_e,
-		3)
+		2)
 	if err != nil {
 		fmt.Println(err)
 		writeJSONError(w, http.StatusInternalServerError, "ServerError")
 		return
 	}
-	tools := gpt.NewChatGptTool()
 	stream, err := tools.Ask(query, put_doc, history)
 	if err != nil {
 		fmt.Println(err)
 		writeJSONError(w, http.StatusInternalServerError, "ServerError")
 		return
 	}
-	w.Header().Set("Transfer-Encoding", "chunked")
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	fmt.Println(r.RemoteAddr, "----ASK:   ", query)
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "Streaming unsupported!", http.StatusInternalServerError)
+		return
+	}
+	fmt.Println(r.RemoteAddr, "----ASK:   ", query, "---keyWords:   ", keyWords)
 	for {
 		msg, err := stream.Recv()
 		if err == io.EOF {
@@ -235,36 +246,19 @@ func chatWithFile(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 			return
 		}
 		content := msg.Choices[0].Delta.Content
-		//fmt.Print(content)
-		jsonData, err := json.Marshal(content)
-		if err != nil {
-			fmt.Println(err)
-			writeJSONError(w, http.StatusInternalServerError, "ServerError")
-			return
-		}
-		_, err = w.Write(jsonData)
-		if err != nil {
-			fmt.Println(err)
-			break
-		}
+		fmt.Fprintf(w, "%s", content)
+		flusher.Flush()
 	}
-	fgf, err := json.Marshal("===========================\n")
-	if err != nil {
-		fmt.Println(err)
-		writeJSONError(w, http.StatusInternalServerError, "ServerError")
-		return
-	}
-	_, err = w.Write(fgf)
 	putDocJSON, err := json.Marshal(put_doc)
 	if err != nil {
 		fmt.Println(err)
 		writeJSONError(w, http.StatusInternalServerError, "ServerError")
 		return
 	}
-	_, err = w.Write(putDocJSON)
-	if err != nil {
-		fmt.Println(err)
-	}
+	fmt.Fprintf(w, "\n\n")
+	flusher.Flush()
+	fmt.Fprintf(w, "%s", putDocJSON)
+	flusher.Flush()
 }
 func allowCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -272,14 +266,10 @@ func allowCORS(next http.Handler) http.Handler {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
-
-		// If it's a preflight request, respond with 200
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
-
-		// Next
 		next.ServeHTTP(w, r)
 	})
 }

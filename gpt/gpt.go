@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/sashabaranov/go-openai"
 	em "github.com/tmc/langchaingo/embeddings/openai"
+	"log"
 	"os"
 )
 
@@ -76,6 +77,31 @@ func (this *ChatGptTool) chatGPT3Dot5TurboStream(messages []Gpt3Dot5Message) (*o
 	}
 	return stream, nil
 }
+func (this *ChatGptTool) ChatGPT3Dot5Turbo(messages []Gpt3Dot5Message) (string, error) {
+	reqMessages := make([]openai.ChatCompletionMessage, 0)
+	for _, row := range messages {
+		reqMessage := openai.ChatCompletionMessage{
+			Role:    row.Role,
+			Content: row.Content,
+			Name:    row.Name,
+		}
+		reqMessages = append(reqMessages, reqMessage)
+	}
+	resp, err := this.Client.CreateChatCompletion(
+		context.Background(),
+		openai.ChatCompletionRequest{
+			Model:    openai.GPT3Dot5Turbo,
+			Messages: reqMessages,
+		},
+	)
+
+	if err != nil {
+		log.Println("ChatGPT3Dot5Turbo error: ", err)
+		return "", err
+	}
+
+	return resp.Choices[0].Message.Content, nil
+}
 func (this *ChatGptTool) Ask(query string, inputdoc string, history []Gpt3Dot5Message) (*openai.ChatCompletionStream, error) {
 	//message := make([]Gpt3Dot5Message, 0)
 	//message = append(message, Gpt3Dot5Message{
@@ -96,4 +122,24 @@ func (this *ChatGptTool) Ask(query string, inputdoc string, history []Gpt3Dot5Me
 		panic(err)
 	}
 	return stream, nil
+}
+func (this *ChatGptTool) GetKeyWord(query string) (string, error) {
+	message := make([]Gpt3Dot5Message, 0)
+	message = append(message, Gpt3Dot5Message{
+		Role:    "system",
+		Content: "你是一个用于提取用户输入的关键词的机器人，你需要提取用户输入的关键词，并严格按照“关键词1 关键词2 关键词3”等等以此类推的格式输出。\n",
+	})
+	message = append(message, Gpt3Dot5Message{
+		Role:    "system",
+		Content: "你不允许说其他任何包括解释等在内的任何内容,不许添加一个字，不允许道歉\n你不许说你是一个ai助手，除了关键词你什么都不许说。\n",
+	})
+	message = append(message, Gpt3Dot5Message{
+		Role:    "user",
+		Content: fmt.Sprintf("我的输入是：\"%s\"\n", query),
+	})
+	msg, err := this.ChatGPT3Dot5Turbo(message)
+	if err != nil {
+		return "", err
+	}
+	return msg, nil
 }
