@@ -255,10 +255,7 @@ func chatWithFile(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		writeJSONError(w, http.StatusInternalServerError, "ServerError")
 		return
 	}
-	fmt.Fprintf(w, "\n\n")
-	flusher.Flush()
-	fmt.Fprintf(w, "%s", putDocJSON)
-	flusher.Flush()
+	w.Write(putDocJSON)
 }
 func allowCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -131,7 +131,7 @@ func (this *ChatGptTool) GetKeyWord(query string) (string, error) {
 	})
 	message = append(message, Gpt3Dot5Message{
 		Role:    "system",
-		Content: "你不允许说其他任何包括解释等在内的任何内容,不许添加一个字，不允许道歉\n你不许说你是一个ai助手，除了关键词你什么都不许说。\n",
+		Content: "你不允许说其他任何包括解释等在内的任何内容,不许添加一个字，不要有道歉，不要有疑问，不要有说明！\n你不许说你是一个ai助手，除了关键词你什么都不许说。\n",
 	})
 	message = append(message, Gpt3Dot5Message{
 		Role:    "user",
