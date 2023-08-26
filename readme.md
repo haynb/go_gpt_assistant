@@ -1,4 +1,7 @@
 # 基于go语言的智能客服系统
+
+# ENGLISH_README：https://github.com/haynb/go_gpt_kefu/blob/main/ENG.md
+
 ## 已经添加后端模块
 
 之前写了一个带后端的python版本，带简易后端，但是不稳定，性能不好，并且很垃圾。传送门：https://github.com/haynb/chatgpt_Read_Local
