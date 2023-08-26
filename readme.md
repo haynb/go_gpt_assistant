@@ -1,6 +1,6 @@
 # 基于go语言的智能客服系统
 
-# ENGLISH_README：https://github.com/haynb/go_gpt_kefu/blob/main/ENG.md
+# ENGLISH_README：[https://github.com/haynb/go_gpt_kefu/blob/main/ENG.md](https://github.com/haynb/go_gpt_kefu/blob/main/ENG_README.md)
 
 ## 已经添加后端模块
 
