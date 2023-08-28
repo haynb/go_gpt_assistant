@@ -220,18 +220,26 @@ func chatWithFile(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		writeJSONError(w, http.StatusInternalServerError, "ServerError")
 		return
 	}
-	stream, err := tools.Ask(query, put_doc, history)
-	if err != nil {
-		fmt.Println(err)
-		writeJSONError(w, http.StatusInternalServerError, "ServerError")
-		return
-	}
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 	flusher, ok := w.(http.Flusher)
 	if !ok {
 		http.Error(w, "Streaming unsupported!", http.StatusInternalServerError)
+		return
+	}
+	putDocJSON, err := json.Marshal(put_doc)
+	if err != nil {
+		fmt.Println(err)
+		writeJSONError(w, http.StatusInternalServerError, "ServerError")
+		return
+	}
+	w.Write(putDocJSON)
+	flusher.Flush()
+	stream, err := tools.Ask(query, put_doc, history)
+	if err != nil {
+		fmt.Println(err)
+		writeJSONError(w, http.StatusInternalServerError, "ServerError")
 		return
 	}
 	fmt.Println(r.RemoteAddr, "----ASK:   ", query, "---keyWords:   ", keyWords)
@@ -249,13 +257,6 @@ func chatWithFile(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		fmt.Fprintf(w, "%s", content)
 		flusher.Flush()
 	}
-	putDocJSON, err := json.Marshal(put_doc)
-	if err != nil {
-		fmt.Println(err)
-		writeJSONError(w, http.StatusInternalServerError, "ServerError")
-		return
-	}
-	w.Write(putDocJSON)
 }
 func allowCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
