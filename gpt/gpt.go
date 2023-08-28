@@ -18,7 +18,7 @@ type OpenAIEmbedder struct {
 type Gpt3Dot5Message openai.ChatCompletionMessage
 
 func NewEm() *OpenAIEmbedder {
-	config := openai.DefaultAzureConfig("4beb6d9440bb4e93ab56e39f230c9f45", "https://heanyang.openai.azure.com/")
+	config := openai.DefaultAzureConfig("4be*********************c9f45", "https://h******g.openai.azure.com/")
 	config.APIVersion = "2023-05-15" // optional update to latest API version
 	client := openai.NewClientWithConfig(config)
 	return &OpenAIEmbedder{Client: client}
