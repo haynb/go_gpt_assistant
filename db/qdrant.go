@@ -14,8 +14,8 @@ import (
 )
 
 var (
-	QdrantBase = "154.12.244.129"
-	QdrantPort = "6333"
+	QdrantBase = "15*****44.1**"
+	QdrantPort = "6**3"
 	id_file    = "id.txt"
 )
 
