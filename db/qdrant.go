@@ -34,11 +34,7 @@ func DocToPoints(docs []schema.Document, e em.OpenAI) ([]map[string]interface{},
 	}
 	i, _ := strconv.Atoi(strings.TrimSpace(string(content)))
 	for j, doc := range docs {
-		metadataStrs := make([]string, 0, len(doc.Metadata))
-		for k, v := range doc.Metadata {
-			metadataStrs = append(metadataStrs, fmt.Sprintf("%s: %v", k, v))
-		}
-		fullText := fmt.Sprintf("%s\nMetadata:\n%s", doc.PageContent, strings.Join(metadataStrs, "\n"))
+		fullText := doc.PageContent
 		// 获取向量
 		embeddingResponse, err := e.EmbedQuery(context.Background(), fullText)
 		if err != nil {
@@ -48,7 +44,8 @@ func DocToPoints(docs []schema.Document, e em.OpenAI) ([]map[string]interface{},
 		points[j] = map[string]interface{}{
 			"id": i + 1,
 			"payload": map[string]interface{}{
-				"text": fullText,
+				"text":     fullText,
+				"metadata": doc.Metadata, // Metadata 添加到 payload 中
 			},
 			"vectors": embeddingResponse,
 		}
