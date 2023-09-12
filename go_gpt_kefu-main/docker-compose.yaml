@@ -1,0 +1,26 @@
+# docker-compose.yml
+version: "3.9"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    ports:
+      - "9964:${APP_PORT}"
+    depends_on:
+      - db
+
+  db:
+    image: qdrant/qdrant
+    env_file:
+      - .env
+    ports:
+      - "6333:${DB_PORT}"
+    volumes:
+      - qdrant_storage:/qdrant/storage
+
+volumes:
+  qdrant_storage:
