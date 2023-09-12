@@ -21,7 +21,7 @@ qdrant：https://qdrant.tech/documentation/
 
 直接 `docker-compose up`即可
 
-需要修改.env中的环境变量：
+需要添加.env中，内容为环境变量：
 
 |                 |                        |
 | --------------- | ---------------------- |
