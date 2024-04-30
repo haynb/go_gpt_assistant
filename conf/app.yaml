@@ -31,13 +31,3 @@ log:
     maxbackups: 30
     level: 6 
 
-
-# mysql
-mysql:
-  host: "*****************"
-  port: 3306
-  dbName: "*********"
-  user: "*********"
-  password: "***********"
-  maxIdleConns: 5
-  MaxOpenConns: 200
