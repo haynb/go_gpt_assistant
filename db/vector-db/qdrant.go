@@ -1,29 +1,36 @@
-package db
+package drant_db
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
-	em "github.com/tmc/langchaingo/embeddings/openai"
-	"github.com/tmc/langchaingo/schema"
 	"io"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
+
+	"go-gpt-assistant/config"
+
+	"github.com/tmc/langchaingo/schema"
+	"go-gpt-assistant/gpt"
 )
 
 var (
-	QdrantBase = "db"
-	QdrantPort = "6333"
+	QdrantBase string
+	QdrantPort string
 	id_file    = "id.txt"
 )
 
-func DocToPoints(docs []schema.Document, e em.OpenAI) ([]map[string]interface{}, error) {
+func InitQdrant() {
+	QdrantBase = config.GetAppConf().QdAddr
+	QdrantPort = config.GetAppConf().QdPort
+}
+
+func DocToPoints(docs []schema.Document, e *gpt.Gpt) ([]map[string]interface{}, error) {
 	points := make([]map[string]interface{}, len(docs))
 	// 获取id
-	file, err := os.OpenFile(id_file, os.O_RDWR|os.O_CREATE, 0755)
+	file, err := os.OpenFile(id_file, os.O_RDWR|os.O_CREATE, 0o755)
 	if err != nil {
 		panic(err)
 	}
@@ -36,7 +43,7 @@ func DocToPoints(docs []schema.Document, e em.OpenAI) ([]map[string]interface{},
 	for j, doc := range docs {
 		fullText := doc.PageContent
 		// 获取向量
-		embeddingResponse, err := e.EmbedQuery(context.Background(), fullText)
+		embeddingResponse, err := e.Embedding([]string{fullText})
 		if err != nil {
 			return nil, fmt.Errorf("Failed to get embedding for document %d: %v", i, err)
 		}
@@ -49,6 +56,7 @@ func DocToPoints(docs []schema.Document, e em.OpenAI) ([]map[string]interface{},
 			},
 			"vectors": embeddingResponse,
 		}
+
 		fmt.Println("已经处理完第", i, "个文档")
 		i++
 	}
@@ -72,20 +80,23 @@ func CreateCollection(collectionName string) ([]byte, error) {
 		"on_disk_payload": true,
 	})
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	request, err := http.NewRequest("PUT", url, bytes.NewBuffer(requestBody))
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	request.Header.Set("Content-Type", "application/json")
 	client := &http.Client{}
 	response, err := client.Do(request)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	defer response.Body.Close()
 	result, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, err
+	}
 	return result, nil
 }
 
@@ -119,6 +130,9 @@ func GetCollection(collectionName string) ([]byte, error) {
 	}
 	defer response.Body.Close()
 	result, err := io.ReadAll(response.Body)
+	if err != nil {
+		panic(err)
+	}
 	return result, nil
 }
 
@@ -129,17 +143,17 @@ func AddPoints(collectionName string, points []map[string]interface{}) (string, 
 		"points": points,
 	})
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 	request, err := http.NewRequest("PUT", url, bytes.NewBuffer(requestBody))
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 	request.Header.Set("Content-Type", "application/json")
 	client := &http.Client{}
 	response, err := client.Do(request)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 	defer response.Body.Close()
 	result, err := io.ReadAll(response.Body)
@@ -150,7 +164,7 @@ func AddPoints(collectionName string, points []map[string]interface{}) (string, 
 }
 
 // 搜索向量
-func Search(collectionName string, params map[string]interface{}, vector []float64, limit int) (string, error) {
+func Search(collectionName string, params map[string]interface{}, vector []float32, limit int) (string, error) {
 	url := fmt.Sprintf("http://%s:%s/collections/%s/points/search", QdrantBase, QdrantPort, collectionName)
 	requestBody, err := json.Marshal(map[string]interface{}{
 		"params":       params,

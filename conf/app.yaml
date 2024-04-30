@@ -1,0 +1,43 @@
+#debug switch
+enableDebug: true
+
+# server http address
+serverAddress: ":9964"
+
+# grpc server
+grpcAddress: ":8090"
+
+#Qdrant
+qdAddr: "*******"
+qdPort: "**********"
+
+#Gpt
+gptApiKey: "****************************"
+gptUrl: "http://*********************/v1"
+
+#MongoDb
+mongoDbAddr: "************"
+mongoDbUser: "***************"
+mongoDbPwd: "*******************"
+mongoDbDatabase: "***********"
+mongoDbCollection: "*********"
+
+# log
+log:
+  serviceLog:
+    filename: "./log/service.log"
+    maxsize: 100
+    maxage: 15
+    maxbackups: 30
+    level: 6 
+
+
+# mysql
+mysql:
+  host: "*****************"
+  port: 3306
+  dbName: "*********"
+  user: "*********"
+  password: "***********"
+  maxIdleConns: 5
+  MaxOpenConns: 200
